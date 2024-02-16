@@ -1,0 +1,121 @@
+#weight round robin
+
+
+from flask import Flask, jsonify
+import requests
+
+app = Flask(__name__)
+
+# Servers' configurations
+servers = [
+    {"host": "98.71.103.41:8080", "identifier": "VM37", "load_factor": 2},
+    {"host": "98.71.102.149:8080", "identifier": "VM38", "load_factor": 1}
+]
+
+# List for managing server rotation
+rotation_list = []
+for index, server in enumerate(servers):
+    rotation_list += [index] * server["load_factor"]
+
+rotation_counter = 0
+
+@app.route('/')
+def balance_load():
+    global rotation_counter
+    # Determine server based on weighted rotation
+    chosen_server = rotation_list[rotation_counter]
+    rotation_counter = (rotation_counter + 1) % len(rotation_list)
+
+    # Retrieve content from the selected server
+    content = get_content(servers[chosen_server]["host"])
+
+    return jsonify({
+        'chosen_server': servers[chosen_server]["identifier"],
+        'content_from_server': content
+    })
+
+def get_content(host):
+    try:
+        resp = requests.get(f"http://{host}")
+        resp.raise_for_status()
+        return resp.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {host} unreachable. Details: {e}")
+        return f"Error: {host} unreachable"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
+
+
+
+
+
+Certainly! Let's break down the code into more concise explanations:
+
+1. **Flask Setup:**
+   ```python
+   from flask import Flask, jsonify
+   import requests
+
+   app = Flask(__name__)
+   ```
+   - Importing necessary modules (`Flask` for creating a web app, `jsonify` for creating JSON responses, and `requests` for making HTTP requests).
+   - Initializing a Flask application.
+
+2. **Servers Configuration:**
+   ```python
+   servers = [
+       {"host": "98.71.103.41:8080", "identifier": "VM37", "load_factor": 2},
+       {"host": "98.71.102.149:8080", "identifier": "VM38", "load_factor": 1}
+   ]
+   ```
+   - Configuring backend servers with their host addresses, identifiers, and load factors.
+
+3. **Weighted Round Robin Setup:**
+   ```python
+   rotation_list = [index for i, server in enumerate(servers) for index in [i] * server["load_factor"]]
+   rotation_counter = 0
+   ```
+   - Creating a list (`rotation_list`) to manage weighted round-robin server rotation based on load factors.
+   - Initializing the `rotation_counter` to keep track of the current rotation index.
+
+4. **Flask Route for Load Balancing:**
+   ```python
+   @app.route('/')
+   def balance_load():
+   ```
+   - Defining a Flask route for the root URL (`'/'`) to handle load balancing.
+
+5. **Weighted Server Selection and Content Retrieval:**
+   ```python
+   chosen_server = rotation_list[rotation_counter]
+   rotation_counter = (rotation_counter + 1) % len(rotation_list)
+   content = get_content(servers[chosen_server]["host"])
+   ```
+   - Selecting a server based on the weighted round-robin rotation.
+   - Updating the rotation counter for the next request.
+   - Retrieving content from the selected server using the `get_content` function.
+
+6. **Server Content Retrieval Function:**
+   ```python
+   def get_content(host):
+       try:
+           resp = requests.get(f"http://{host}")
+           resp.raise_for_status()
+           return resp.text
+       except requests.exceptions.RequestException as e:
+           print(f"Error: {host} unreachable. Details: {e}")
+           return f"Error: {host} unreachable"
+   ```
+   - A function to make an HTTP GET request to a given server's host.
+   - Handling potential errors and returning either the content or an error message.
+
+7. **Running the Flask Application:**
+   ```python
+   if __name__ == "__main__":
+       app.run(host="0.0.0.0", port=8080)
+   ```
+   - Ensuring the Flask application is only run when the script is executed directly.
+   - Running the application on all available network interfaces (`host="0.0.0.0"`) on port 8080.
+
+In summary, this code implements a weighted round-robin load balancer using Flask. It distributes incoming requests among backend servers based on their load factors. The load balancer runs on port 8080 and returns JSON responses indicating the chosen server and the content retrieved from it.

@@ -1,0 +1,109 @@
+#round robin
+
+from flask import Flask
+from flask import request
+import requests
+
+app = Flask(__name__)
+
+# List of backend servers
+servers = ['http://98.71.103.41:8080', 'http://98.71.102.149:8080']
+current_server_index = 0
+
+@app.route('/')
+def load_balancer():
+    global current_server_index
+
+    # Get the current backend server
+    current_server = servers[current_server_index]
+
+    # Update the index for the next request (round-robin)
+    current_server_index = (current_server_index + 1) % len(servers)
+
+    # Forward the request to the backend server
+    backend_response = requests.get(current_server + request.path)
+
+    # Return the response from the backend server
+    return backend_response.text
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
+
+
+
+
+This code is a simple implementation of a basic load balancer using the Flask framework in Python. A load balancer distributes incoming network traffic across multiple servers to ensure that no single server becomes overwhelmed with too much load. In this case, the load balancer uses a round-robin approach to distribute requests among a list of backend servers
+
+
+
+1. Importing Modules:
+  
+   from flask import Flask
+   from flask import request
+   import requests
+  
+
+   - `Flask` is a web framework for building web applications in Python.
+   - `request` is a Flask module that helps access incoming request data.
+   - `requests` is a third-party library used for making HTTP requests.
+
+2. Creating Flask Application:
+   
+   app = Flask(__name__)
+
+   - This line initializes a Flask web application.
+
+3. Backend Servers Configuration:
+   
+   servers = ['http://98.71.103.41:8080', 'http://98.71.102.149:8080']
+   current_server_index = 0
+   
+
+   - The `servers` list contains the URLs of backend servers.
+   - `current_server_index` keeps track of the current backend server to which the next request will be directed.
+
+4. Defining a Route and Load Balancer Function:
+  
+   @app.route('/')
+   def load_balancer():
+ 
+
+   - This decorator (`@app.route('/')`) associates the `load_balancer` function with the root URL ('/').
+
+5. Getting the Current Backend Server:
+   
+   current_server = servers[current_server_index]
+   
+
+   - The `current_server` variable holds the URL of the current backend server based on the `current_server_index`.
+
+6. Updating the Backend Server Index (Round-Robin):
+  
+   current_server_index = (current_server_index + 1) % len(servers)
+   
+
+   - This line increments `current_server_index` in a round-robin fashion to select the next backend server for the subsequent request.
+
+7. Forwarding Request to Backend Server:
+  
+   backend_response = requests.get(current_server + request.path)
+   
+
+   - The code uses the `requests` library to send an HTTP GET request to the current backend server, including the path of the original request (`request.path`).
+
+8. Returning Backend Server Response:
+   
+   return backend_response.text
+   
+
+   - The content of the response from the backend server is returned to the client.
+
+9. Running the Flask Application:
+   
+   if __name__ == '__main__':
+       app.run(host='0.0.0.0', port=8080)
+   
+
+   - This block ensures that the Flask application is only run when the script is executed directly, and it specifies that the application should listen on all available network interfaces (`host='0.0.0.0'`) on port 8080.
+
+In summary, this code defines a basic load balancer using Flask. It distributes incoming requests among multiple backend servers in a round-robin fashion to achieve a simple form of load balancing. The load balancer listens on port 8080 and forwards requests to backend servers, returning their responses to clients.
